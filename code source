@@ -1,0 +1,375 @@
+
+
+#include <iostream>
+#include <string>
+#include <iomanip>
+using namespace std;
+
+//  Patient Node (Linked List)
+
+struct Patient {
+    int    id;
+    string name;
+    int    age;
+    string disease;
+    int    priority;   // 1 = Critical, 2 = Moderate, 3 = Normal
+    Patient* next;
+
+    Patient(int i, string n, int a, string d, int p)
+        : id(i), name(n), age(a), disease(d), priority(p), next(nullptr) {}
+};
+
+//  Queue Node (Waiting List)
+
+struct QueueNode {
+    int       patientId;
+    string    patientName;
+    QueueNode* next;
+
+    QueueNode(int id, string name) : patientId(id), patientName(name), next(nullptr) {}
+};
+
+
+//  Linked List – Patient Records
+
+class PatientList {
+    Patient* head;
+    int      totalPatients;
+
+public:
+    PatientList() : head(nullptr), totalPatients(0) {}
+
+    
+    void addPatient(int id, string name, int age, string disease, int priority) {
+        
+        Patient* temp = head;
+        while (temp) {
+            if (temp->id == id) {
+                cout << "\n  [!] Patient ID " << id << " already exists.\n";
+                return;
+            }
+            temp = temp->next;
+        }
+        Patient* newNode = new Patient(id, name, age, disease, priority);
+        if (!head) {
+            head = newNode;
+        } else {
+            Patient* cur = head;
+            while (cur->next) cur = cur->next;
+            cur->next = newNode;
+        }
+        totalPatients++;
+        cout << "\n  Patient \"" << name << "\" added successfully (ID: " << id << ").\n";
+    }
+
+    
+    bool deletePatient(int id) {
+        if (!head) return false;
+        if (head->id == id) {
+            Patient* del = head;
+            head = head->next;
+            delete del;
+            totalPatients--;
+            return true;
+        }
+        Patient* cur = head;
+        while (cur->next && cur->next->id != id) cur = cur->next;
+        if (!cur->next) return false;
+        Patient* del = cur->next;
+        cur->next = del->next;
+        delete del;
+        totalPatients--;
+        return true;
+    }
+
+    
+    Patient* searchById(int id) {
+        Patient* cur = head;
+        while (cur) {
+            if (cur->id == id) return cur;
+            cur = cur->next;
+        }
+        return nullptr;
+    }
+
+    
+    Patient* searchByName(const string& name) {
+        Patient* cur = head;
+        while (cur) {
+            if (cur->name == name) return cur;
+            cur = cur->next;
+        }
+        return nullptr;
+    }
+
+    
+    void displayAll() {
+        if (!head) {
+            cout << "\n  No patient records found.\n";
+            return;
+        }
+        cout << "\n  " << string(72, '-') << "\n";
+        cout << "  " << left
+             << setw(6)  << "ID"
+             << setw(20) << "Name"
+             << setw(5)  << "Age"
+             << setw(20) << "Disease"
+             << setw(10) << "Priority"
+             << "\n";
+        cout << "  " << string(72, '-') << "\n";
+        Patient* cur = head;
+        while (cur) {
+            string prio = (cur->priority == 1) ? "Critical"
+                        : (cur->priority == 2) ? "Moderate" : "Normal";
+            cout << "  "
+                 << setw(6)  << cur->id
+                 << setw(20) << cur->name
+                 << setw(5)  << cur->age
+                 << setw(20) << cur->disease
+                 << setw(10) << prio
+                 << "\n";
+            cur = cur->next;
+        }
+        cout << "  " << string(72, '-') << "\n";
+        cout << "  Total Patients: " << totalPatients << "\n";
+    }
+
+    
+    void sortByPriority() {
+        if (!head || !head->next) return;
+        bool swapped;
+        do {
+            swapped = false;
+            Patient* cur = head;
+            while (cur->next) {
+                if (cur->priority > cur->next->priority) {
+                    // Swap data 
+                    swap(cur->id,       cur->next->id);
+                    swap(cur->name,     cur->next->name);
+                    swap(cur->age,      cur->next->age);
+                    swap(cur->disease,  cur->next->disease);
+                    swap(cur->priority, cur->next->priority);
+                    swapped = true;
+                }
+                cur = cur->next;
+            }
+        } while (swapped);
+        cout << "\n  Patients sorted by priority (Critical → Moderate → Normal).\n";
+    }
+
+    bool isEmpty() { return head == nullptr; }
+
+    ~PatientList() {
+        while (head) {
+            Patient* del = head;
+            head = head->next;
+            delete del;
+        }
+    }
+};
+
+
+//  Queue – Waiting List (FIFO)
+
+class WaitingQueue {
+    QueueNode* front;
+    QueueNode* rear;
+    int        size;
+
+public:
+    WaitingQueue() : front(nullptr), rear(nullptr), size(0) {}
+
+    void enqueue(int id, const string& name) {
+        QueueNode* node = new QueueNode(id, name);
+        if (!rear) {
+            front = rear = node;
+        } else {
+            rear->next = node;
+            rear = node;
+        }
+        size++;
+        cout << "\n   Patient \"" << name << "\" added to waiting list (Position: " << size << ").\n";
+    }
+
+    void dequeue() {
+        if (!front) {
+            cout << "\n   Waiting list is empty.\n";
+            return;
+        }
+        cout << "\n  Patient \"" << front->patientName << "\" (ID: " << front->patientId << ") called from waiting list.\n";
+        QueueNode* del = front;
+        front = front->next;
+        if (!front) rear = nullptr;
+        delete del;
+        size--;
+    }
+
+    void display() {
+        if (!front) {
+            cout << "\n  Waiting list is empty.\n";
+            return;
+        }
+        cout << "\n  Waiting List:\n";
+        cout << "  " << string(35, '-') << "\n";
+        QueueNode* cur = front;
+        int pos = 1;
+        while (cur) {
+            cout << "  " << pos++ << ". [ID: " << cur->patientId << "] " << cur->patientName << "\n";
+            cur = cur->next;
+        }
+        cout << "  " << string(35, '-') << "\n";
+        cout << "  Total in queue: " << size << "\n";
+    }
+
+    bool isEmpty() { return front == nullptr; }
+
+    ~WaitingQueue() {
+        while (front) {
+            QueueNode* del = front;
+            front = front->next;
+            delete del;
+        }
+    }
+};
+
+
+//  Helper – print patient details
+
+void printPatient(Patient* p) {
+    string prio = (p->priority == 1) ? "Critical"
+                : (p->priority == 2) ? "Moderate" : "Normal";
+    
+    cout << "   Patient Details             \n";
+    
+    cout << "    ID       : " << left << setw(17) << p->id       << "│\n";
+    cout << "    Name     : " << left << setw(17) << p->name     << "│\n";
+    cout << "   Age      : " << left << setw(17) << p->age      << "│\n";
+    cout << "    Disease  : " << left << setw(17) << p->disease  << "│\n";
+    cout << "   Priority : " << left << setw(17) << prio        << "│\n";
+    
+}
+
+
+//  Menu
+
+void showMenu() {
+    
+    cout << "     HOSPITAL PATIENT MANAGEMENT SYSTEM\n";
+    cout << "    1. Add Patient                       \n";
+    cout << "    2. Delete Patient                    \n";
+    cout << "    3. Search Patient by ID              \n";
+    cout << "    4. Search Patient by Name            \n";
+    cout << "    5. Display All Patients              \n";
+    cout << "    6. Sort Patients by Priority         \n";
+    cout << "    7. Add to Waiting Queue              \n";
+    cout << "    8. Call Next Patient (Dequeue)       \n";
+    cout << "    9. Display Waiting Queue             \n";
+    cout << "    0. Exit                              \n";
+    
+    cout << "  Enter choice: ";
+}
+
+
+//  Main
+
+int main() {
+    PatientList  patients;
+    WaitingQueue waitingList;
+    int          choice;
+
+    
+    patients.addPatient(101, "Aarav Sharma",   35, "Fever",       3);
+    patients.addPatient(102, "Priya Patel",    28, "Fracture",    2);
+    patients.addPatient(103, "Ravi Mehta",     60, "Heart Attack",1);
+    patients.addPatient(104, "Sunita Desai",   45, "Diabetes",    2);
+    patients.addPatient(105, "Karan Joshi",    22, "Appendicitis",1);
+
+    cout << "\n  Sample data loaded (5 patients).\n";
+
+    do {
+        showMenu();
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+
+        case 1: {
+            int    id, age, priority;
+            string name, disease;
+            cout << "\n  Enter Patient ID    : "; cin >> id;      cin.ignore();
+            cout << "  Enter Name          : "; getline(cin, name);
+            cout << "  Enter Age           : "; cin >> age;       cin.ignore();
+            cout << "  Enter Disease       : "; getline(cin, disease);
+            cout << "  Enter Priority (1=Critical / 2=Moderate / 3=Normal): ";
+            cin >> priority;   cin.ignore();
+            if (priority < 1 || priority > 3) { cout << "   Invalid priority. Defaulting to 3.\n"; priority = 3; }
+            patients.addPatient(id, name, age, disease, priority);
+            break;
+        }
+
+        case 2: {
+            int id;
+            cout << "\n  Enter Patient ID to delete: "; cin >> id; cin.ignore();
+            if (patients.deletePatient(id))
+                cout << "  [-] Patient ID " << id << " deleted successfully.\n";
+            else
+                cout << "  [!] Patient ID " << id << " not found.\n";
+            break;
+        }
+
+        case 3: {
+            int id;
+            cout << "\n  Enter Patient ID to search: "; cin >> id; cin.ignore();
+            Patient* p = patients.searchById(id);
+            if (p) printPatient(p);
+            else   cout << "  [!] Patient not found.\n";
+            break;
+        }
+
+        case 4: {
+            string name;
+            cout << "\n  Enter Patient Name to search: "; getline(cin, name);
+            Patient* p = patients.searchByName(name);
+            if (p) printPatient(p);
+            else   cout << "  [!] Patient not found.\n";
+            break;
+        }
+
+        case 5:
+            patients.displayAll();
+            break;
+
+        case 6:
+            patients.sortByPriority();
+            patients.displayAll();
+            break;
+
+        case 7: {
+            int    id;
+            string name;
+            cout << "\n  Enter Patient ID   : "; cin >> id;    cin.ignore();
+            cout << "  Enter Patient Name : "; getline(cin, name);
+            waitingList.enqueue(id, name);
+            break;
+        }
+
+        case 8:
+            waitingList.dequeue();
+            break;
+
+        case 9:
+            waitingList.display();
+            break;
+
+        case 0:
+            cout << "\n  Exiting... Thank you!\n\n";
+            break;
+
+        default:
+            cout << "\n   Invalid choice. Please try again.\n";
+        }
+
+    } while (choice != 0);
+
+    return 0;
+}
